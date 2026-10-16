@@ -1,0 +1,321 @@
+getgenv().RAYFIELD_SECURE = true
+
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/gen2"))()
+
+local BlackTheme = {
+    WindowColor = ColorSequence.new(Color3.fromRGB(0, 0, 0)),
+    ShadowColor = Color3.fromRGB(0, 0, 0),
+    LiveAnimation = false,
+    ElementTransparency = 0,
+    ElementStroke = Color3.fromRGB(0, 0, 0),
+    ElementGradient = ColorSequence.new(Color3.fromRGB(0, 0, 0)),
+    AccentColor = Color3.fromRGB(0, 0, 0),
+    AccentStroke = Color3.fromRGB(18, 18, 18),
+    NeutralButton = Color3.fromRGB(0, 0, 0),
+    NeutralButtonHover = Color3.fromRGB(12, 12, 12),
+    TitlingColor = Color3.fromRGB(255, 255, 255),
+    ContentColor = Color3.fromRGB(220, 220, 220),
+}
+
+local Window = Rayfield:CreateWindow({
+    name = "Orbit",
+    subtitle = "OG Cobra Kai",
+    theme = BlackTheme,
+    sidebarLayout = true,
+})
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local BagFarmEnabled = false
+local PushupFarmEnabled = false
+local SitupFarmEnabled = false
+local KillAuraEnabled = false
+local HitboxEnabled = false
+
+local HitboxSize = Vector3.new(15, 15, 15)
+local HitboxTransparency = 0.6
+local HitboxColor = Color3.fromRGB(255, 0, 100)
+
+local NoclipConnection
+local OriginalCollision = {}
+local LockedHumanoid
+local OriginalWalkSpeed
+local OriginalSizes = {}
+local HitboxConnection
+
+local function getCharacter()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+
+local function setNoclip(enabled)
+    if enabled then
+        if NoclipConnection then return end
+        NoclipConnection = RunService.Stepped:Connect(function()
+            local character = LocalPlayer.Character
+            if not character then return end
+            for _, part in ipairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    if OriginalCollision[part] == nil then
+                        OriginalCollision[part] = part.CanCollide
+                    end
+                    part.CanCollide = false
+                end
+            end
+        end)
+    else
+        if NoclipConnection then
+            NoclipConnection:Disconnect()
+            NoclipConnection = nil
+        end
+        for part, canCollide in pairs(OriginalCollision) do
+            if part and part.Parent then
+                part.CanCollide = canCollide
+            end
+        end
+        table.clear(OriginalCollision)
+    end
+end
+
+local function setWalkingDisabled(disabled, humanoid)
+    if disabled then
+        if not humanoid then return end
+        LockedHumanoid = humanoid
+        OriginalWalkSpeed = humanoid.WalkSpeed
+        humanoid.WalkSpeed = 0
+    elseif LockedHumanoid and LockedHumanoid.Parent and OriginalWalkSpeed ~= nil then
+        LockedHumanoid.WalkSpeed = OriginalWalkSpeed
+        LockedHumanoid = nil
+        OriginalWalkSpeed = nil
+    end
+end
+
+local function teleportTo(pos)
+    local char = getCharacter()
+    local root = char:WaitForChild("HumanoidRootPart", 3)
+    if root then
+        root.CFrame = CFrame.new(pos)
+    end
+end
+
+local function applyHitbox(char)
+    if not char or char == LocalPlayer.Character then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if not OriginalSizes[char] then
+        OriginalSizes[char] = hrp.Size
+    end
+
+    hrp.Size = HitboxSize
+    hrp.Transparency = HitboxTransparency
+    hrp.Color = HitboxColor
+    hrp.Material = Enum.Material.Neon
+    hrp.CanCollide = false
+end
+
+local function restoreAllHitboxes()
+    for char, originalSize in pairs(OriginalSizes) do
+        if char and char.Parent then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.Size = originalSize
+                hrp.Transparency = 0
+                hrp.Color = Color3.fromRGB(255, 255, 255)
+                hrp.Material = Enum.Material.Plastic
+            end
+        end
+    end
+    table.clear(OriginalSizes)
+end
+
+local TeleportTab = Window:CreateTab({ name = "Teleport" })
+local FarmTab = Window:CreateTab({ name = "Farm" })
+local PvPTab = Window:CreateTab({ name = "PvP" })
+
+TeleportTab:CreateButton({name = "Cobra Kai Roof", callback = function() teleportTo(Vector3.new(72, 25, 97)) end})
+TeleportTab:CreateButton({name = "Safe Zone", callback = function() teleportTo(Vector3.new(87, 3, 55)) end})
+TeleportTab:CreateButton({name = "Cobra Kai Dojo", callback = function() teleportTo(Vector3.new(36, 3, 42)) end})
+TeleportTab:CreateButton({name = "Cobra Kai Office", callback = function() teleportTo(Vector3.new(6, 6, 2)) end})
+TeleportTab:CreateButton({name = "Cobra Kai Back Gym", callback = function() teleportTo(Vector3.new(30, 3, -50)) end})
+TeleportTab:CreateButton({name = "Secret Room", callback = function() teleportTo(Vector3.new(87, 3, -9)) end})
+TeleportTab:CreateButton({name = "Dojo 1", callback = function() teleportTo(Vector3.new(-158, 3, 130)) end})
+TeleportTab:CreateButton({name = "Dojo 2", callback = function() teleportTo(Vector3.new(-260, 3, 134)) end})
+TeleportTab:CreateButton({name = "Dojo 3", callback = function() teleportTo(Vector3.new(-367, 3, 126)) end})
+TeleportTab:CreateButton({name = "Dojo 4", callback = function() teleportTo(Vector3.new(55, 3, -128)) end})
+TeleportTab:CreateButton({name = "Dojo 5", callback = function() teleportTo(Vector3.new(54, 3, -237)) end})
+TeleportTab:CreateButton({name = "Dojo 6", callback = function() teleportTo(Vector3.new(51, 3, -338)) end})
+TeleportTab:CreateButton({name = "Mini Mart", callback = function() teleportTo(Vector3.new(-70, 3, 154)) end})
+TeleportTab:CreateButton({name = "All Valley Tournament Roof", callback = function() teleportTo(Vector3.new(66, 24, 303)) end})
+TeleportTab:CreateButton({name = "Miyagi Do", callback = function() teleportTo(Vector3.new(-73, 3, -964)) end})
+TeleportTab:CreateButton({name = "Miyagi Do Platform", callback = function() teleportTo(Vector3.new(-49, 2, -1113)) end})
+TeleportTab:CreateButton({name = "Miyagi Roof", callback = function() teleportTo(Vector3.new(-56, 18, -1006)) end})
+
+FarmTab:CreateToggle({
+    name = "Bag Farm",
+    value = false,
+    callback = function(enabled)
+        BagFarmEnabled = enabled
+        if enabled then
+            setNoclip(true)
+            task.spawn(function()
+                task.wait(0.1)
+                local character = getCharacter()
+                local root = character:WaitForChild("HumanoidRootPart")
+                local humanoid = character:WaitForChild("Humanoid")
+                root.CFrame = CFrame.new(98, 3, 71)
+                setWalkingDisabled(true, humanoid)
+
+                local attackRemote = ReplicatedStorage:WaitForChild("Attack")
+                while BagFarmEnabled do
+                    attackRemote:FireServer(3)
+                    task.wait(0.45)
+                end
+            end)
+        else
+            setWalkingDisabled(false)
+            setNoclip(false)
+        end
+    end,
+})
+
+FarmTab:CreateToggle({
+    name = "Pushup Farm",
+    value = false,
+    callback = function(enabled)
+        PushupFarmEnabled = enabled
+        if enabled then
+            task.spawn(function()
+                local pushupRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("PushUp")
+                while PushupFarmEnabled do
+                    pushupRemote:FireServer()
+                    task.wait(0)
+                end
+            end)
+        end
+    end,
+})
+
+FarmTab:CreateToggle({
+    name = "Situp Farm",
+    value = false,
+    callback = function(enabled)
+        SitupFarmEnabled = enabled
+        if enabled then
+            task.spawn(function()
+                local situpRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SitUp")
+                while SitupFarmEnabled do
+                    situpRemote:FireServer()
+                    task.wait(0)
+                end
+            end)
+        end
+    end,
+})
+
+PvPTab:CreateToggle({
+    name = "Kill Aura",
+    value = false,
+    callback = function(enabled)
+        KillAuraEnabled = enabled
+        if enabled then
+            task.spawn(function()
+                local attackRemote = ReplicatedStorage:WaitForChild("Attack")
+                while KillAuraEnabled do
+                    attackRemote:FireServer(3)
+                    task.wait(0) -- Very fast, adjust if needed
+                end
+            end)
+        end
+    end,
+})
+
+PvPTab:CreateToggle({
+    name = "Hitbox Expander",
+    value = false,
+    callback = function(enabled)
+        HitboxEnabled = enabled
+        if enabled then
+            HitboxConnection = RunService.Heartbeat:Connect(function()
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character then
+                        applyHitbox(player.Character)
+                    end
+                end
+            end)
+        else
+            if HitboxConnection then
+                HitboxConnection:Disconnect()
+                HitboxConnection = nil
+            end
+            restoreAllHitboxes()
+        end
+    end,
+})
+
+PvPTab:CreateSlider({
+    name = "Hitbox Size X",
+    range = {0, 350},
+    increment = 1,
+    value = 15,
+    callback = function(val)
+        HitboxSize = Vector3.new(val, HitboxSize.Y, HitboxSize.Z)
+    end,
+})
+
+PvPTab:CreateSlider({
+    name = "Hitbox Size Y",
+    range = {0, 350},
+    increment = 1,
+    value = 15,
+    callback = function(val)
+        HitboxSize = Vector3.new(HitboxSize.X, val, HitboxSize.Z)
+    end,
+})
+
+PvPTab:CreateSlider({
+    name = "Hitbox Size Z",
+    range = {0, 350},
+    increment = 1,
+    value = 15,
+    callback = function(val)
+        HitboxSize = Vector3.new(HitboxSize.X, HitboxSize.Y, val)
+    end,
+})
+
+PvPTab:CreateSlider({
+    name = "Hitbox Transparency",
+    range = {0, 100},
+    increment = 1,
+    value = 60,
+    callback = function(val)
+        HitboxTransparency = val / 100
+    end,
+})
+
+PvPTab:CreateColorPicker({
+    name = "Hitbox Color",
+    color = Color3.fromRGB(255, 0, 100),
+    callback = function(newColor)
+        HitboxColor = newColor
+    end,
+})
+
+FarmTab:CreateButton({
+    name = "Unload Orbit",
+    callback = function()
+        BagFarmEnabled = false
+        PushupFarmEnabled = false
+        SitupFarmEnabled = false
+        KillAuraEnabled = false
+        HitboxEnabled = false
+        
+        if HitboxConnection then HitboxConnection:Disconnect() end
+        restoreAllHitboxes()
+        setWalkingDisabled(false)
+        setNoclip(false)
+        Window:Unload()
+    end,
+})
